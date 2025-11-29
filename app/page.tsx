@@ -4,47 +4,11 @@
 import React, { useState, useCallback } from "react";
 
 /** =========================
- *  Gemini / Imagen API 설정
+ *  Image API 설정 (서버 라우트만 사용)
  * ========================= */
 
-// ⚠️ Fill Your API Key Here (for testing only; don't expose in real production)
-const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-
-// Imagen 4.0 model endpoint
-const IMAGE_GENERATION_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${API_KEY}`;
-const MAX_RETRIES = 5;
-
-// Simple delay helper
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Exponential backoff fetch helper
-async function fetchWithBackoff(
-  url: string,
-  options: RequestInit,
-  maxRetries = MAX_RETRIES
-): Promise<Response> {
-  let lastError: unknown = null;
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      const response = await fetch(url, options);
-      if (response.ok) {
-        return response;
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
-    } catch (error) {
-      lastError = error;
-      if (i < maxRetries - 1) {
-        const waitTime = Math.pow(2, i) * 1000 + Math.random() * 1000;
-        await delay(waitTime);
-      }
-    }
-  }
-  throw new Error(
-    `Failed to fetch after ${maxRetries} attempts. Last error: ${String(
-      lastError
-    )}`
-  );
-}
+// 프론트에서 부를 경로는 이 한 줄만 사용
+const IMAGE_API_URL = "/api/generate_image";
 
 /** =========================
  *  Question Definitions
@@ -568,67 +532,49 @@ export default function Home() {
     }
   };
 
-  // Call Gemini/Imagen to generate image
- const generatePuddingImage = useCallback(
-  async (prompt: string | undefined) => {
-    if (!prompt || !API_KEY) return;
+  // Call server API to generate image
+  const generatePuddingImage = useCallback(
+    async (prompt: string | undefined) => {
+      if (!prompt) return;
 
-    setIsLoadingImage(true);
-    setImageError(null);
-    setImageUrl(null);
+      setIsLoadingImage(true);
+      setImageError(null);
+      setImageUrl(null);
 
-    // 🔹 Gemini REST 형식
-    const payload = {
-      contents: [
-        {
-          parts: [{ text: prompt }],
-        },
-      ],
-      generationConfig: {
-        imageConfig: {
-          // 1:1 정사각형 (원하면 16:9, 9:16 등으로 변경 가능)
-          aspectRatio: "1:1",
-        },
-      },
-    };
+      try {
+        const res = await fetch(IMAGE_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        });
 
-    const options: RequestInit = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    };
+        const data: any = await res.json();
 
-    try {
-      const response = await fetchWithBackoff(IMAGE_GENERATION_URL, options);
-      const data: any = await response.json();
+        if (!res.ok) {
+          console.error("API route error:", data);
+          setImageError(data.error || "Gemini API error");
+          return;
+        }
 
-      // 🔹 inlineData 에서 base64 추출
-      const partWithImage =
-        data?.candidates?.[0]?.content?.parts?.find(
-          (p: any) => p.inlineData
-        );
-      const base64Data = partWithImage?.inlineData?.data;
+        const base64Data = data.imageBase64;
+        if (!base64Data) {
+          setImageError("No image data returned from server.");
+          return;
+        }
 
-      if (base64Data) {
         const url = `data:image/png;base64,${base64Data}`;
         setImageUrl(url);
-      } else {
-        console.error("No inlineData in response:", data);
+      } catch (err) {
+        console.error("Fetch /api/generate_image failed:", err);
         setImageError(
-          "Failed to generate image. Response did not contain image data."
+          "Failed to connect to the image generation service. Please try again."
         );
+      } finally {
+        setIsLoadingImage(false);
       }
-    } catch (err) {
-      console.error("Gemini image API call failed:", err);
-      setImageError(
-        "Failed to connect to the image generation service. Please try again."
-      );
-    } finally {
-      setIsLoadingImage(false);
-    }
-  },
-  []
-);
+    },
+    []
+  );
 
   const handleCreateProfileAndResult = () => {
     if (!nickname || shareInstagram === null) return;
@@ -637,7 +583,6 @@ export default function Home() {
     const matches = pickIdealMatches(answers);
 
     // later: send nickname/instagram/answers to backend here
-    // and use backend matches instead of dummy
 
     setResult(pudding);
     setIdealMatches(matches);
