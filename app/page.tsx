@@ -8,10 +8,10 @@ import React, { useState, useCallback } from "react";
  * ========================= */
 
 // ⚠️ Fill Your API Key Here (for testing only; don't expose in real production)
-const API_KEY = "";
+const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
 // Imagen 4.0 model endpoint
-const IMAGE_GENERATION_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${AIzaSyBqsMmgJJalaEq5BU3s-XDoyen-tIB_Hws}`;
+const IMAGE_GENERATION_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${API_KEY}`;
 const MAX_RETRIES = 5;
 
 // Simple delay helper
