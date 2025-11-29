@@ -11,7 +11,7 @@ import React, { useState, useCallback } from "react";
 const API_KEY = "";
 
 // Imagen 4.0 model endpoint
-const IMAGE_GENERATION_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${API_KEY}`;
+const IMAGE_GENERATION_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${AIzaSyBqsMmgJJalaEq5BU3s-XDoyen-tIB_Hws}`;
 const MAX_RETRIES = 5;
 
 // Simple delay helper
@@ -569,53 +569,66 @@ export default function Home() {
   };
 
   // Call Gemini/Imagen to generate image
-  const generatePuddingImage = useCallback(
-    async (prompt: string | undefined) => {
-      if (!prompt || !API_KEY) {
-        // no prompt or no API key
-        return;
-      }
+ const generatePuddingImage = useCallback(
+  async (prompt: string | undefined) => {
+    if (!prompt || !API_KEY) return;
 
-      setIsLoadingImage(true);
-      setImageError(null);
-      setImageUrl(null);
+    setIsLoadingImage(true);
+    setImageError(null);
+    setImageUrl(null);
 
-      const payload = {
-        instances: [{ prompt }],
-        parameters: { sampleCount: 1 },
-      };
+    // 🔹 Gemini REST 형식
+    const payload = {
+      contents: [
+        {
+          parts: [{ text: prompt }],
+        },
+      ],
+      generationConfig: {
+        imageConfig: {
+          // 1:1 정사각형 (원하면 16:9, 9:16 등으로 변경 가능)
+          aspectRatio: "1:1",
+        },
+      },
+    };
 
-      const options: RequestInit = {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      };
+    const options: RequestInit = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    };
 
-      try {
-        const response = await fetchWithBackoff(IMAGE_GENERATION_URL, options);
-        const data: any = await response.json();
+    try {
+      const response = await fetchWithBackoff(IMAGE_GENERATION_URL, options);
+      const data: any = await response.json();
 
-        const base64Data = data?.predictions?.[0]?.bytesBase64Encoded;
-        if (base64Data) {
-          const url = `data:image/png;base64,${base64Data}`;
-          setImageUrl(url);
-        } else {
-          console.error("No base64 in response:", data);
-          setImageError(
-            "Failed to generate image. The response did not contain image data."
-          );
-        }
-      } catch (err) {
-        console.error("Gemini API call failed:", err);
-        setImageError(
-          "Failed to connect to the image generation service. Please try again."
+      // 🔹 inlineData 에서 base64 추출
+      const partWithImage =
+        data?.candidates?.[0]?.content?.parts?.find(
+          (p: any) => p.inlineData
         );
-      } finally {
-        setIsLoadingImage(false);
+      const base64Data = partWithImage?.inlineData?.data;
+
+      if (base64Data) {
+        const url = `data:image/png;base64,${base64Data}`;
+        setImageUrl(url);
+      } else {
+        console.error("No inlineData in response:", data);
+        setImageError(
+          "Failed to generate image. Response did not contain image data."
+        );
       }
-    },
-    []
-  );
+    } catch (err) {
+      console.error("Gemini image API call failed:", err);
+      setImageError(
+        "Failed to connect to the image generation service. Please try again."
+      );
+    } finally {
+      setIsLoadingImage(false);
+    }
+  },
+  []
+);
 
   const handleCreateProfileAndResult = () => {
     if (!nickname || shareInstagram === null) return;
