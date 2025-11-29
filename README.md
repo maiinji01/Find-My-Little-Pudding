@@ -2,8 +2,10 @@
 Discover your perfect anime-style pudding match with AI!
 *Created by Hanyang University students as a playful project.*
 
-⭐ 재미있다면 Star 눌러주세요! | Please Star if you like it!
-Twitter/Instagram/Reddit에서 공유도 환영! | Share on Twitter/Instagram/Reddit!
+⭐ 재미있다면 Star 눌러주세요!
+⭐ Please Star if you like it!
+⭐ Twitter/Instagram/Reddit 공유 환영!
+⭐ Share on Twitter/Instagram/Reddit!
 
 
 ---
