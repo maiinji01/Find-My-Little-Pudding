@@ -7,10 +7,6 @@ import React, { useState, useCallback } from "react";
  *  Image API 설정 (서버 라우트만 사용)
  * ========================= */
 
-// 🔹 더 이상 클라이언트에 API 키 두지 않음!!
-// const API_KEY = "..."  <-- 전부 삭제
-// const IMAGE_GENERATION_URL = "https://..." <-- 이것도 삭제
-
 // 프론트에서 부를 경로는 이 한 줄만 사용
 const IMAGE_API_URL = "/api/generate_image";
 
@@ -164,7 +160,7 @@ type IdealMatch = {
   dateFrequency: string;
   conflictStyle: string;
   shareInstagram: boolean;
-  instagramUrl?: string | null;
+  instagramId?: string | null; // 아이디만
 };
 
 /** =========================
@@ -207,68 +203,6 @@ const EMOTION_FACE: Record<string, string> = {
   direct: "a confident and expressive face",
   indirect: "a gentle and subtle face",
 };
-
-/** =========================
- *  Dummy Ideal Match DB
- *  ========================= */
-
-const IDEAL_PUDDING_DB: IdealMatch[] = [
-  {
-    id: "ideal_1",
-    nickname: "Strawberry Heart",
-    puddingName: "Romantic Heart Strawberry 💘🍓",
-    gender: "female",
-    lovePriority: "thrilled",
-    dateFrequency: "everyday",
-    conflictStyle: "immediate",
-    shareInstagram: true,
-    instagramUrl: "https://instagram.com/strawberry_heart",
-  },
-  {
-    id: "ideal_2",
-    nickname: "Matcha Growth",
-    puddingName: "Calm Growth Matcha 📚🍵",
-    gender: "male",
-    lovePriority: "growth",
-    dateFrequency: "biweekly",
-    conflictStyle: "afterThinking",
-    shareInstagram: false,
-    instagramUrl: null,
-  },
-  {
-    id: "ideal_3",
-    nickname: "Choco Laugh",
-    puddingName: "Funny Choco Buddy 😂🍫",
-    gender: "female",
-    lovePriority: "humor code",
-    dateFrequency: "monthly",
-    conflictStyle: "immediate",
-    shareInstagram: true,
-    instagramUrl: "https://instagram.com/choco_laugh",
-  },
-  {
-    id: "ideal_4",
-    nickname: "Custard Prince",
-    puddingName: "Romantic Custard Prince 💘🍮",
-    gender: "male",
-    lovePriority: "thrilled",
-    dateFrequency: "everyday",
-    conflictStyle: "afterThinking",
-    shareInstagram: false,
-    instagramUrl: null,
-  },
-  {
-    id: "ideal_5",
-    nickname: "Caramel Partner",
-    puddingName: "Diligent Caramel Partner 📚🍯",
-    gender: "female",
-    lovePriority: "growth",
-    dateFrequency: "biweekly",
-    conflictStyle: "immediate",
-    shareInstagram: true,
-    instagramUrl: "https://instagram.com/caramel_partner",
-  },
-];
 
 /** =========================
  *  Logic Functions
@@ -314,12 +248,6 @@ function getPuddingName(id: string): string {
     default:
       return "Soft Vanilla Pudding 🤎";
   }
-}
-
-// user's gender → opposite for matching
-function getTargetGender(answers: AnswerMap): "male" | "female" {
-  const gender = answers["gender"];
-  return gender === "male" ? "female" : "male";
 }
 
 // Prompt for Gemini/Imagen
@@ -402,31 +330,6 @@ function buildIdealDescription(match: IdealMatch): string {
   return parts.join(" ");
 }
 
-// pick top 3 ideal matches using dummy DB
-function pickIdealMatches(
-  answers: AnswerMap,
-  db: IdealMatch[] = IDEAL_PUDDING_DB
-): IdealMatch[] {
-  const targetGender = getTargetGender(answers);
-  const love = answers["lovePriority"];
-  const date = answers["dateFrequency"];
-  const conflict = answers["conflictStyle"];
-
-  const candidates = db.filter((p) => p.gender === targetGender);
-
-  const scored = candidates
-    .map((p) => {
-      let score = 0;
-      if (p.lovePriority === love) score += 3;
-      if (p.dateFrequency === date) score += 2;
-      if (p.conflictStyle === conflict) score += 1;
-      return { ...p, score };
-    })
-    .sort((a, b) => b.score - a.score);
-
-  return scored.slice(0, 3);
-}
-
 // base pudding result + smooth reason
 function pickPudding(answers: AnswerMap): PuddingResult {
   const puddingId = decideBasePuddingId(answers);
@@ -507,7 +410,7 @@ export default function Home() {
 
   const [nickname, setNickname] = useState("");
   const [shareInstagram, setShareInstagram] = useState<null | boolean>(null);
-  const [instagramUrl, setInstagramUrl] = useState("");
+  const [instagramId, setInstagramId] = useState("");
 
   const [result, setResult] = useState<PuddingResult | null>(null);
   const [idealMatches, setIdealMatches] = useState<IdealMatch[]>([]);
@@ -536,20 +439,84 @@ export default function Home() {
     }
   };
 
-  
+  // Call server API to generate image
+  const generatePuddingImage = useCallback(
+    async (prompt: string | undefined) => {
+      if (!prompt) return;
 
-  const handleCreateProfileAndResult = () => {
+      setIsLoadingImage(true);
+      setImageError(null);
+      setImageUrl(null);
+
+      try {
+        const res = await fetch(IMAGE_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        });
+
+        const data: any = await res.json();
+
+        if (!res.ok) {
+          console.error("API route error:", data);
+          setImageError(data.error || "Gemini API error");
+          return;
+        }
+
+        const base64Data = data.imageBase64;
+        if (!base64Data) {
+          setImageError("No image data returned from server.");
+          return;
+        }
+
+        const url = `data:image/png;base64,${base64Data}`;
+        setImageUrl(url);
+      } catch (err) {
+        console.error("Fetch /api/generate_image failed:", err);
+        setImageError(
+          "Failed to connect to the image generation service. Please try again."
+        );
+      } finally {
+        setIsLoadingImage(false);
+      }
+    },
+    []
+  );
+
+  // Supabase 기반: 프로필 저장 + 이상형 매칭
+  const handleCreateProfileAndResult = async () => {
     if (!nickname || shareInstagram === null) return;
 
     const pudding = pickPudding(answers);
-    const matches = pickIdealMatches(answers);
 
-    // later: send nickname/instagram/answers to backend here
+    try {
+      const res = await fetch("/api/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nickname,
+          instagramId: shareInstagram ? instagramId : null,
+          gender: answers["gender"],
+          lovePriority: answers["lovePriority"],
+          dateFrequency: answers["dateFrequency"],
+          conflictStyle: answers["conflictStyle"],
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("profiles API error", data);
+        setIdealMatches([]);
+      } else {
+        setIdealMatches(data.idealMatches ?? []);
+      }
+    } catch (e) {
+      console.error("profiles API fetch failed", e);
+      setIdealMatches([]);
+    }
 
     setResult(pudding);
-    setIdealMatches(matches);
-
-    // start generating image immediately
     generatePuddingImage(pudding.imagePrompt);
   };
 
@@ -560,7 +527,7 @@ export default function Home() {
     setFinishedQuestions(false);
     setNickname("");
     setShareInstagram(null);
-    setInstagramUrl("");
+    setInstagramId("");
     setResult(null);
     setIdealMatches([]);
     setImageUrl(null);
@@ -743,15 +710,15 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Instagram URL (only if Yes) */}
+            {/* Instagram ID (only if Yes) */}
             {shareInstagram === true && (
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-orange-700">
                   Instagram ID
                 </label>
                 <input
-                  value={instagramUrl}
-                  onChange={(e) => setInstagramUrl(e.target.value)}
+                  value={instagramId}
+                  onChange={(e) => setInstagramId(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-orange-200 text-sm"
                   placeholder="your_instagram_id"
                 />
@@ -814,16 +781,6 @@ export default function Home() {
               {result.reason}
             </p>
 
-            {/* Image Prompt (dev/debug) */}
-            <details className="mt-4 rounded-xl bg-orange-50/70 border border-orange-100 p-3 cursor-pointer">
-              <summary className="text-xs font-semibold text-orange-700">
-                🪄 View image generation prompt (for developers)
-              </summary>
-              <pre className="text-[10px] text-orange-900/80 whitespace-pre-wrap mt-2 p-1 border-t border-orange-100 pt-2">
-                {result.imagePrompt}
-              </pre>
-            </details>
-
             {/* Ideal Matches */}
             <div className="mt-6">
               <h3 className="text-lg font-bold text-orange-700 mb-3 text-center">
@@ -831,7 +788,7 @@ export default function Home() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {idealMatches.map((m, index) => {
-                  const showInstagram = m.shareInstagram && m.instagramUrl;
+                  const showInstagram = m.shareInstagram && m.instagramId;
                   const desc = buildIdealDescription(m);
 
                   return (
@@ -854,9 +811,9 @@ export default function Home() {
                       </div>
 
                       {showInstagram ? (
-                       <p className="text-[10px] text-orange-900/80 mt-1">
-                         Instagram: {m.instagramUrl}
-                      </p>
+                        <p className="text-[10px] text-orange-900/80 mt-1 break-all">
+                          Instagram: {m.instagramId}
+                        </p>
                       ) : (
                         <p className="text-[10px] text-orange-900/80 text-left leading-snug mt-1">
                           {desc}
