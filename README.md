@@ -3,7 +3,7 @@ Discover your perfect anime-style pudding match with AI!
 *Created by Hanyang University students as a playful project.*
 
 
-https://find-my-little-pudding.vercel.app/
+실행해보기 → https://find-my-little-pudding.vercel.app/
 
 
 ⭐ 재미있다면 Star 눌러주세요!
