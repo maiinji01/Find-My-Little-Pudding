@@ -18,8 +18,14 @@ const QUESTIONS = [
     title: "[Energy]",
     question: "What are your tendencies?",
     options: [
-      { value: "extrovert", label: "Extroverted type(I got energy when I'm with people)" },
-      { value: "introvert", label: "Introverted type(I get energy when I'm alone)" },
+      {
+        value: "extrovert",
+        label: "Extroverted type(I get energy when I'm with people)",
+      },
+      {
+        value: "introvert",
+        label: "Introverted type(I get energy when I'm alone)",
+      },
     ],
   },
   {
@@ -107,45 +113,40 @@ const QUESTIONS = [
 type AnswerMap = Record<string, string>;
 
 function pickPudding(answers: AnswerMap) {
-  const gender = answers["gender"];         // male / female
-  const energy = answers["energy"];         // extrovert / introvert
-  const plan = answers["plan"];             // "planned type" / "impromptu"
-  const love = answers["lovePriority"];     // thrilled / growth / "humor code"
-  const rhythm = answers["rhythm"];         // morning / night
+  const gender = answers["gender"];
+  const energy = answers["energy"];
+  const plan = answers["plan"];
+  const love = answers["lovePriority"];
+  const rhythm = answers["rhythm"];
 
-  // 1) 에너지 + 계획 성향
   if (energy === "extrovert" && plan === "impromptu") {
-    return "Spontaneous Strawberry Pudding 🍓"; // 활발 + 즉흥
+    return "Spontaneous Strawberry Pudding 🍓";
   }
 
   if (energy === "extrovert" && plan === "planned type") {
-    return "Bright Custard Pudding 🍮"; // 활발 + 계획
+    return "Bright Custard Pudding 🍮";
   }
 
-  // 2) 내향 + 계획 / 성장
   if (energy === "introvert" && plan === "planned type") {
-    return "Calm Matcha Pudding 🍵"; // 차분 + 계획
+    return "Calm Matcha Pudding 🍵";
   }
 
-  // 3) 연애 가치관 기준
   if (love === "thrilled") {
-    return "Romantic Heart Pudding 💘"; // 설렘 타입
+    return "Romantic Heart Pudding 💘";
   }
 
   if (love === "growth") {
-    return "Growth Mindset Pudding 📚"; // 성장 타입
+    return "Growth Mindset Pudding 📚";
   }
 
   if (love === "humor code") {
-    return "Funny Choco Pudding 😂"; // 유머 타입
+    return "Funny Choco Pudding 😂";
   }
 
-  // 4) 생체리듬 기준 보정
   if (rhythm === "night") {
-    return "Midnight Pudding 🌙"; // 밤 감성
+    return "Midnight Pudding 🌙";
   }
 
-  // 기본값
   return "Soft Vanilla Pudding 🤎";
 }
 
@@ -155,23 +156,36 @@ export default function Home() {
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [result, setResult] = useState<string | null>(null);
 
+  // ⭐ 추가된 상태
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
   const current = QUESTIONS[step];
-  const progress = Math.round(((step) / QUESTIONS.length) * 100);
+  const progress = Math.round((step / QUESTIONS.length) * 100);
 
   const handleSelect = (qid: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [qid]: value }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!current) return;
-    if (!answers[current.id]) return; // 선택 안 했으면 넘어가지 않음
+    if (!answers[current.id]) return;
 
+    // 다음 질문
     if (step < QUESTIONS.length - 1) {
       setStep((s) => s + 1);
     } else {
-      // 마지막 질문 → 결과 계산
+      // 결과 계산
       const pudding = pickPudding(answers);
       setResult(pudding);
+
+      // ⭐ Gemini 이미지 생성
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        body: JSON.stringify({ prompt: pudding }),
+      });
+
+      const data = await res.json();
+      setImageUrl(data.url);
     }
   };
 
@@ -180,6 +194,7 @@ export default function Home() {
     setStep(0);
     setAnswers({});
     setResult(null);
+    setImageUrl(null);
   };
 
   return (
@@ -188,13 +203,11 @@ export default function Home() {
         {!started && !result && (
           <section className="text-center space-y-6">
             <div className="text-5xl">🍮</div>
-            <h1 className="text-2xl font-bold text-orange-700">
-              Find my little pudding
-            </h1>
+            <h1 className="text-2xl font-bold text-orange-700">Find my little pudding</h1>
             <p className="text-sm text-orange-900/80">
-              Are you ready to create your own pudding character,
+              Are you ready to create your own pudding character?
               <br />
-              and look for your ideal pudding that goes with me?
+              And look for your ideal pudding that goes with you?
             </p>
             <button
               onClick={() => setStarted(true)}
@@ -207,22 +220,21 @@ export default function Home() {
 
         {started && !result && current && (
           <section className="space-y-6">
-            <div className="flex justify-between items-center text-xs text-orange-800/70 mb-1">
+            <div className="flex justify-between text-xs text-orange-800/70 mb-1">
               <span>
                 Q{step + 1} / {QUESTIONS.length}
               </span>
               <span>{progress}%</span>
             </div>
+
             <div className="w-full bg-orange-100 rounded-full h-2 overflow-hidden">
               <div
-                className="h-2 bg-orange-400 rounded-full transition-all"
                 style={{ width: `${progress}%` }}
+                className="h-2 bg-orange-400 rounded-full transition-all"
               />
             </div>
 
-            <h2 className="text-sm font-semibold text-orange-700">
-              {current.title}
-            </h2>
+            <h2 className="text-sm font-semibold text-orange-700">{current.title}</h2>
             <p className="text-base text-orange-900">{current.question}</p>
 
             <div className="space-y-3 mt-4">
@@ -256,13 +268,17 @@ export default function Home() {
         {result && (
           <section className="text-center space-y-4">
             <div className="text-5xl">🍮✨</div>
-            <h2 className="text-xl font-bold text-orange-700">
-              You are... {result}
-            </h2>
-            <p className="text-sm text-orange-900/80">
-              (여기에 나중에 푸딩 캐릭터 설명, 성향 분석, 이상형 푸딩 3명 추천
-              텍스트를 넣으면 돼!)
-            </p>
+            <h2 className="text-xl font-bold text-orange-700">You are... {result}</h2>
+
+            {/* ⭐ 결과 이미지 출력 */}
+            {imageUrl && (
+              <img
+                src={imageUrl}
+                alt="pudding result"
+                className="w-60 h-auto mx-auto rounded-2xl shadow-lg"
+              />
+            )}
+
             <button
               onClick={handleRestart}
               className="mt-4 inline-flex items-center justify-center rounded-full bg-orange-500 px-6 py-2 text-white font-semibold hover:bg-orange-600 transition"
