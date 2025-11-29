@@ -7,6 +7,10 @@ import React, { useState, useCallback } from "react";
  *  Image API 설정 (서버 라우트만 사용)
  * ========================= */
 
+// 🔹 더 이상 클라이언트에 API 키 두지 않음!!
+// const API_KEY = "..."  <-- 전부 삭제
+// const IMAGE_GENERATION_URL = "https://..." <-- 이것도 삭제
+
 // 프론트에서 부를 경로는 이 한 줄만 사용
 const IMAGE_API_URL = "/api/generate_image";
 
@@ -532,49 +536,7 @@ export default function Home() {
     }
   };
 
-  // Call server API to generate image
-  const generatePuddingImage = useCallback(
-    async (prompt: string | undefined) => {
-      if (!prompt) return;
-
-      setIsLoadingImage(true);
-      setImageError(null);
-      setImageUrl(null);
-
-      try {
-        const res = await fetch(IMAGE_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt }),
-        });
-
-        const data: any = await res.json();
-
-        if (!res.ok) {
-          console.error("API route error:", data);
-          setImageError(data.error || "Gemini API error");
-          return;
-        }
-
-        const base64Data = data.imageBase64;
-        if (!base64Data) {
-          setImageError("No image data returned from server.");
-          return;
-        }
-
-        const url = `data:image/png;base64,${base64Data}`;
-        setImageUrl(url);
-      } catch (err) {
-        console.error("Fetch /api/generate_image failed:", err);
-        setImageError(
-          "Failed to connect to the image generation service. Please try again."
-        );
-      } finally {
-        setIsLoadingImage(false);
-      }
-    },
-    []
-  );
+  
 
   const handleCreateProfileAndResult = () => {
     if (!nickname || shareInstagram === null) return;
@@ -785,13 +747,13 @@ export default function Home() {
             {shareInstagram === true && (
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-orange-700">
-                  Instagram URL
+                  Instagram ID
                 </label>
                 <input
                   value={instagramUrl}
                   onChange={(e) => setInstagramUrl(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-orange-200 text-sm"
-                  placeholder="https://instagram.com/your_id"
+                  placeholder="your_instagram_id"
                 />
               </div>
             )}
@@ -852,7 +814,15 @@ export default function Home() {
               {result.reason}
             </p>
 
-      
+            {/* Image Prompt (dev/debug) */}
+            <details className="mt-4 rounded-xl bg-orange-50/70 border border-orange-100 p-3 cursor-pointer">
+              <summary className="text-xs font-semibold text-orange-700">
+                🪄 View image generation prompt (for developers)
+              </summary>
+              <pre className="text-[10px] text-orange-900/80 whitespace-pre-wrap mt-2 p-1 border-t border-orange-100 pt-2">
+                {result.imagePrompt}
+              </pre>
+            </details>
 
             {/* Ideal Matches */}
             <div className="mt-6">
@@ -884,14 +854,9 @@ export default function Home() {
                       </div>
 
                       {showInstagram ? (
-                        <a
-                          href={m.instagramUrl!}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[10px] text-blue-600 underline break-all mt-1"
-                        >
-                          Instagram: {m.instagramUrl}
-                        </a>
+                       <p className="text-[10px] text-orange-900/80 mt-1">
+                         Instagram: {m.instagramUrl}
+                      </p>
                       ) : (
                         <p className="text-[10px] text-orange-900/80 text-left leading-snug mt-1">
                           {desc}
