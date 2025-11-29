@@ -852,15 +852,7 @@ export default function Home() {
               {result.reason}
             </p>
 
-            {/* Image Prompt (dev/debug) */}
-            <details className="mt-4 rounded-xl bg-orange-50/70 border border-orange-100 p-3 cursor-pointer">
-              <summary className="text-xs font-semibold text-orange-700">
-                🪄 View image generation prompt (for developers)
-              </summary>
-              <pre className="text-[10px] text-orange-900/80 whitespace-pre-wrap mt-2 p-1 border-t border-orange-100 pt-2">
-                {result.imagePrompt}
-              </pre>
-            </details>
+      
 
             {/* Ideal Matches */}
             <div className="mt-6">
