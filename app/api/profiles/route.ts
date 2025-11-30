@@ -2,10 +2,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 type MatchRequestBody = {
   nickname: string;
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as MatchRequestBody;
 
-    // 1) 프로필 DB 저장
+    // 1) 프로필 저장
     const { data: inserted, error: insertError } = await supabase
       .from("profiles")
       .insert({
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     // 2) 이상형 성별
     const targetGender = body.gender === "male" ? "female" : "male";
 
-    // 3) DB에서 후보 불러오기
+    // 3) 후보 불러오기
     const { data: candidates, error: selectError } = await supabase
       .from("profiles")
       .select("*")
@@ -82,9 +82,14 @@ export async function POST(req: Request) {
       conflictStyle: p.conflict_style,
       shareInstagram: !!p.instagram_id,
       instagramId: p.instagram_id,
+      puddingImageUrl: p.pudding_image_url ?? null, // ⭐ 여기 추가 (나중에 이미지도 표시 가능)
     }));
 
-    return NextResponse.json({ idealMatches });
+    // 추가함(이상형 이미지 뜨는거!!)
+    return NextResponse.json({
+      profileId: inserted.id, // ← 프론트에서 이미지 저장할 때 필요!
+      idealMatches,
+    });
   } catch (err) {
     console.error("profiles API error:", err);
     return NextResponse.json(
