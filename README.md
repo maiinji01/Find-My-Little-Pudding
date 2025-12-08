@@ -5,6 +5,10 @@ Discover your perfect anime-style pudding match with AI!
 
 실행해보기 → https://find-my-little-pudding.vercel.app/
 
+제작과정 short-vlog 
+→ 1탄 https://youtube.com/shorts/WHcLOGuiQx8?si=nAYUpvYeiWHJiLgc
+→ 2탄 https://youtube.com/shorts/eQ8hb9l92uI?si=u1BJEpszqYV07BOB
+
 
 ⭐ 재미있다면 Star 눌러주세요!
 ⭐ Please Star if you like it!
