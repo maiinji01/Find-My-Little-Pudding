@@ -28,10 +28,10 @@ Find Your Pudding creates your cute anime-style cookie/pudding character using A
 ---
 
 ## 핵심 기능 | Key Features
-- AI 이미지 생성 → 나만의 캐릭터 만들기 | AI image generation for your unique character
-- 캐릭터별 키워드 자동 추출 | Auto-extract keywords from each character
-- 이상형 키워드 입력 → 매칭 | Enter your ideal-type keywords → get matched
-- 개인정보 제공 동의자만 공개 (인스타 ID 포함 선택) | Show only for users who agree to share personal info (Instagram ID optional)
+- AI 이미지 생성으로 나만의 푸딩 캐릭터 생성 | AI-generated personalized pudding character
+- 사용자 성향·취향 기반 캐릭터 요소 자동 구성 | Automatic character attributes from personality & preferences
+- 연애 가치관을 활용한 이상형 Top 3 매칭 | Top 3 ideal matches based on dating values
+- 인스타그램 ID는 공유 동의 시에만 공개 | Instagram ID is shown only with user’s consent
 
 ---
 
