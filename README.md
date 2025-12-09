@@ -51,11 +51,11 @@ Find Your Pudding creates your cute anime-style cookie/pudding character using A
 ---
 
 ## 기술 스택 | Tech Stack
-- AI 모델: Vision-Language Model (이미지 → 키워드) | AI Model: Vision-Language Model (image → keywords)
-- 캐릭터 스타일: LoRA / Stable Diffusion | Character Style: LoRA / Stable Diffusion
-- 백엔드: Python + FastAPI | Backend: Python + FastAPI 
-- 프론트엔드: Streamlit | Frontend: Streamlit
-- 데이터 저장: JSON or SQLite | Data storage: JSON or SQLite
+- Front: Next.js
+- Backend API: Supabase Edge Functions (or Next.js API routes)
+- DB: Supabase (profiles table) 
+- Storage: Supabase Storage
+- AI Image: Google Imagen / Gemini API
 
 ---
 
