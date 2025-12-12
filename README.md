@@ -7,6 +7,7 @@ Discover your perfect anime-style pudding match with AI!
 
  제작과정 short-vlog 
 → 1탄 https://youtube.com/shorts/WHcLOGuiQx8?si=nAYUpvYeiWHJiLgc
+
 → 2탄 https://youtube.com/shorts/eQ8hb9l92uI?si=u1BJEpszqYV07BOB
 
 
